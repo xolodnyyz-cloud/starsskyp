@@ -20,7 +20,7 @@ MANAGER_USERNAME = "buyer_supportz"
 
 # Курс и лимиты
 STARS_TO_RUB = 1.6
-MIN_STARS = 1
+MIN_STARS = 1  # Минимальная сумма для теста
 
 # База данных
 DATA_FILE = "data.json"
@@ -146,7 +146,7 @@ async def start_selling(query, context):
         f"📈 Максимальная сумма: не ограничена\n\n"
         "📝 Пожалуйста, введите количество звёзд (только число)\n"
         "• Используйте цифры, без пробелов и точек\n"
-        "• Например: 100, 500, 1000, 5000\n\n"
+        "• Например: 1, 2, 5, 10, 100\n\n"
         f"✨ Пример: если введёте {MIN_STARS}, то получите {MIN_STARS * STARS_TO_RUB} ₽\n\n"
         "👇 Введите число ниже:"
     )
@@ -180,7 +180,7 @@ async def handle_stars_amount(update: Update, context: ContextTypes.DEFAULT_TYPE
                 f"Это меньше допустимого минимума.\n\n"
                 "📝 Пожалуйста, введите сумму не меньше минимальной:\n"
                 f"• Минимум: {MIN_STARS} ⭐️\n"
-                f"• Пример: {MIN_STARS}, 500, 1000\n\n"
+                f"• Пример: {MIN_STARS}, 2, 5\n\n"
                 "👇 Попробуйте снова:"
             )
             
@@ -196,9 +196,10 @@ async def handle_stars_amount(update: Update, context: ContextTypes.DEFAULT_TYPE
             "Пожалуйста, введите количество звёзд только цифрами.\n\n"
             "📝 Примеры правильного ввода:\n"
             f"• {MIN_STARS}\n"
-            "• 500\n"
-            "• 1000\n"
-            "• 5000\n\n"
+            "• 2\n"
+            "• 5\n"
+            "• 10\n"
+            "• 100\n\n"
             "👇 Попробуйте снова:"
         )
         
