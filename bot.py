@@ -20,7 +20,7 @@ MANAGER_USERNAME = "buyer_supportz"  # Ваш менеджер
 
 # Курс и лимиты
 STARS_TO_RUB = 1.6
-MIN_STARS = 100  # Для теста
+MIN_STARS = 100  # Минимальное количество звёзд для продажи
 
 # База данных
 DATA_FILE = "data.json"
@@ -102,7 +102,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🌟 Добро пожаловать в Скупку Звёзд Telegram, {user.first_name}!\n\n"
         "Мы профессионально покупаем Telegram Stars по самому выгодному курсу!\n\n"
         f"💰 Курс обмена: 1 звезда = {STARS_TO_RUB} ₽\n"
-        f"📊 Минимальная сумма: {MIN_STARS} ⭐️ (тестовый режим)\n"
+        f"📊 Минимальная сумма: {MIN_STARS} ⭐️\n"
         "💳 Способы выплаты:\n"
         "• Карта РФ (любого банка)\n"
         "• СБП по номеру телефона\n\n"
@@ -154,11 +154,11 @@ async def start_selling(query, context):
     text = (
         "💫 Сколько звёзд вы хотите продать?\n\n"
         f"💰 Курс обмена: 1 звезда = {STARS_TO_RUB} ₽\n"
-        f"📊 Минимальная сумма для продажи: {MIN_STARS} ⭐️ (тестовый режим)\n"
+        f"📊 Минимальная сумма для продажи: {MIN_STARS} ⭐️\n"
         f"📈 Максимальная сумма: не ограничена\n\n"
         "📝 Пожалуйста, введите количество звёзд (только число)\n"
         "• Используйте цифры, без пробелов и точек\n"
-        "• Например: 1, 5, 10, 100\n\n"
+        "• Например: 100, 500, 1000, 5000\n\n"
         f"✨ Пример: если введёте {MIN_STARS}, то получите {MIN_STARS * STARS_TO_RUB} ₽\n\n"
         "👇 Введите число ниже:"
     )
@@ -200,7 +200,7 @@ async def handle_stars_amount(update: Update, context: ContextTypes.DEFAULT_TYPE
                 f"Это меньше допустимого минимума.\n\n"
                 "📝 Пожалуйста, введите сумму не меньше минимальной:\n"
                 f"• Минимум: {MIN_STARS} ⭐️\n"
-                f"• Пример: {MIN_STARS}, 5, 10\n\n"
+                f"• Пример: {MIN_STARS}, 500, 1000\n\n"
                 "👇 Попробуйте снова:"
             )
             
@@ -216,9 +216,9 @@ async def handle_stars_amount(update: Update, context: ContextTypes.DEFAULT_TYPE
             "Пожалуйста, введите количество звёзд только цифрами.\n\n"
             "📝 Примеры правильного ввода:\n"
             f"• {MIN_STARS}\n"
-            "• 5\n"
-            "• 10\n"
-            "• 100\n\n"
+            "• 500\n"
+            "• 1000\n"
+            "• 5000\n\n"
             "👇 Попробуйте снова:"
         )
         
@@ -424,7 +424,7 @@ async def create_stars_invoice(query, context):
     data["transactions"].append(transaction)
     save_data(data)
     
-    print(f"\n🔔 ТЕСТОВЫЙ РЕЖИМ - СОЗДАН СЧЁТ:")
+    print(f"\n🔔 СОЗДАН НОВЫЙ СЧЁТ:")
     print(f"   ID транзакции: {transaction_id}")
     print(f"   Пользователь: @{query.from_user.username} (ID: {query.from_user.id})")
     print(f"   Звёзд к оплате: {stars_amount} ⭐️")
@@ -482,7 +482,7 @@ async def pre_checkout_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     query = update.pre_checkout_query
     await query.answer(ok=True)
     
-    print(f"\n✅ ТЕСТОВЫЙ РЕЖИМ - ПРЕДПРОВЕРОЧНЫЙ ЗАПРОС:")
+    print(f"\n✅ ПРЕДПРОВЕРОЧНЫЙ ЗАПРОС:")
     print(f"   Пользователь: @{query.from_user.username}")
     print(f"   Сумма: {query.total_amount} ⭐️")
     print(f"   Время: {datetime.now().strftime('%H:%M:%S')}")
@@ -493,7 +493,7 @@ async def successful_payment_handler(update: Update, context: ContextTypes.DEFAU
     payment = update.message.successful_payment
     payload = payment.invoice_payload
     
-    print(f"\n💰 ТЕСТОВЫЙ РЕЖИМ - ПОЛУЧЕНА ОПЛАТА!")
+    print(f"\n💰 ПОЛУЧЕНА ОПЛАТА!")
     print(f"   Payload: {payload}")
     print(f"   Сумма: {payment.total_amount} ⭐️")
     print(f"   Валюта: {payment.currency}")
@@ -602,7 +602,7 @@ async def show_instructions(query, context):
     instructions = (
         "📋 Как проходит сделка:\n\n"
         "Шаг 1️⃣ - Введите количество звёзд для продажи\n"
-        f"• Минимальная сумма: {MIN_STARS} ⭐️ (тестовый режим)\n"
+        f"• Минимальная сумма: {MIN_STARS} ⭐️\n"
         f"• Курс: 1 ⭐️ = {STARS_TO_RUB} ₽\n\n"
         "Шаг 2️⃣ - Выберите способ получения оплаты\n"
         "• Карта РФ (любого банка)\n"
@@ -662,7 +662,7 @@ async def back_to_main(query, context):
         f"🌟 С возвращением, {first_name}!\n\n"
         "Мы профессионально покупаем Telegram Stars по самому выгодному курсу!\n\n"
         f"💰 Курс обмена: 1 звезда = {STARS_TO_RUB} ₽\n"
-        f"📊 Минимальная сумма: {MIN_STARS} ⭐️ (тестовый режим)\n"
+        f"📊 Минимальная сумма: {MIN_STARS} ⭐️\n"
         "💳 Способы выплаты:\n"
         "• Карта РФ (любого банка)\n"
         "• СБП по номеру телефона\n\n"
@@ -718,7 +718,7 @@ def main():
     print("ЗАПУСК БОТА ДЛЯ СКУПКИ ЗВЁЗД TELEGRAM")
     print("=" * 60)
     print(f"📊 Курс: 1 звезда = {STARS_TO_RUB} ₽")
-    print(f"📊 Минимальная сумма: {MIN_STARS} ⭐️ (ТЕСТОВЫЙ РЕЖИМ)")
+    print(f"📊 Минимальная сумма: {MIN_STARS} ⭐️")
     print(f"📊 Менеджер: @{MANAGER_USERNAME}")
     print(f"📸 Фото: {PHOTO_FILE} (поместите файл в папку с ботом)")
     print("=" * 60)
