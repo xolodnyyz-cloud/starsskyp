@@ -1,5 +1,6 @@
 import logging
 import re
+import sys
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, LabeledPrice, InputFile
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes, PreCheckoutQueryHandler
 import json
@@ -26,6 +27,15 @@ MIN_STARS = 100  # Минимальное количество звёзд для
 DATA_FILE = "data.json"
 PHOTO_FILE = "bot_photo.jpg"  # Название файла с фото
 
+print("=" * 60)
+print("ЗАПУСК БОТА ДЛЯ СКУПКИ ЗВЁЗД TELEGRAM")
+print("=" * 60)
+print(f"Токен: {TOKEN[:10]}...{TOKEN[-5:]}")
+print(f"Менеджер: @{MANAGER_USERNAME}")
+print(f"Курс: 1 звезда = {STARS_TO_RUB} ₽")
+print(f"Минимальная сумма: {MIN_STARS} ⭐️")
+print("=" * 60)
+
 def load_data():
     if os.path.exists(DATA_FILE):
         with open(DATA_FILE, 'r', encoding='utf-8') as f:
@@ -48,16 +58,17 @@ async def send_with_photo(chat_id, text, reply_markup=None, context=None, photo_
                     caption=text,
                     reply_markup=reply_markup
                 )
+            print(f"✅ Отправлено сообщение с фото в чат {chat_id}")
         else:
             # Если фото нет, отправляем обычное сообщение
-            logger.warning(f"Файл {photo_file} не найден, отправляю без фото")
+            print(f"⚠️ Файл {photo_file} не найден, отправляю без фото")
             await context.bot.send_message(
                 chat_id=chat_id,
                 text=text,
                 reply_markup=reply_markup
             )
     except Exception as e:
-        logger.error(f"Ошибка при отправке с фото: {e}")
+        print(f"❌ Ошибка при отправке с фото: {e}")
         # В случае ошибки отправляем без фото
         await context.bot.send_message(
             chat_id=chat_id,
@@ -71,20 +82,25 @@ async def edit_message(query, text, reply_markup=None):
         # Проверяем, есть ли у сообщения текст
         if query.message.text:
             await query.edit_message_text(text, reply_markup=reply_markup)
+            print(f"✅ Отредактировано текстовое сообщение")
         elif query.message.caption:
             # Если это сообщение с фото, редактируем подпись
             await query.edit_message_caption(caption=text, reply_markup=reply_markup)
+            print(f"✅ Отредактирована подпись к фото")
         else:
             # Если ничего нет, отправляем новое сообщение
             await query.message.reply_text(text, reply_markup=reply_markup)
+            print(f"✅ Отправлено новое сообщение")
     except Exception as e:
-        logger.error(f"Ошибка при редактировании: {e}")
+        print(f"❌ Ошибка при редактировании: {e}")
         # В случае ошибки отправляем новое сообщение
         await query.message.reply_text(text, reply_markup=reply_markup)
 
 # Обработчики команд
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
+    print(f"\n🔔 Пользователь @{user.username} (ID: {user.id}) запустил бота")
+    
     context.user_data.clear()
     context.user_data['state'] = 'main'
     
@@ -97,6 +113,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "joined_date": datetime.now().isoformat()
         }
         save_data(data)
+        print(f"✅ Новый пользователь сохранён в базе")
     
     welcome_text = (
         f"🌟 Добро пожаловать в Скупку Звёзд Telegram, {user.first_name}!\n\n"
@@ -127,6 +144,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
+    
+    print(f"\n🔔 Нажата кнопка: {query.data} от пользователя @{query.from_user.username}")
     
     if query.data == 'sell':
         await start_selling(query, context)
@@ -173,6 +192,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Единый обработчик всех текстовых сообщений"""
     text = update.message.text.strip()
     current_state = context.user_data.get('state')
+    
+    print(f"\n🔔 Получено сообщение: '{text}' от @{update.effective_user.username}, состояние: {current_state}")
     
     # Если ждём количество звёзд
     if current_state == 'waiting_for_amount':
@@ -234,6 +255,8 @@ async def handle_stars_amount(update: Update, context: ContextTypes.DEFAULT_TYPE
     # Сохраняем данные
     context.user_data['stars_amount'] = stars_amount
     context.user_data['rub_amount'] = rub_amount
+    
+    print(f"✅ Пользователь ввёл {stars_amount} ⭐️, к выплате {rub_amount} ₽")
     
     # Показываем результат
     text = (
@@ -329,6 +352,8 @@ async def handle_payment_details(update: Update, context: ContextTypes.DEFAULT_T
     payment_method = context.user_data.get('payment_method')
     payment_name = context.user_data.get('payment_name')
     
+    print(f"📝 Получены реквизиты: {details}, способ: {payment_method}")
+    
     if payment_method == 'rub':
         # Убираем пробелы и проверяем, что это похоже на карту
         clean_details = details.replace(' ', '')
@@ -405,6 +430,12 @@ async def create_stars_invoice(query, context):
     payment_name = context.user_data.get('payment_name')
     payment_details = context.user_data.get('payment_details')
     
+    print(f"\n💰 СОЗДАНИЕ СЧЁТА:")
+    print(f"   Пользователь: @{query.from_user.username}")
+    print(f"   Звёзд: {stars_amount} ⭐️")
+    print(f"   К выплате: {rub_amount} ₽")
+    print(f"   Реквизиты: {payment_details}")
+    
     # Сохраняем транзакцию
     data = load_data()
     transaction_id = len(data["transactions"]) + 1
@@ -424,15 +455,7 @@ async def create_stars_invoice(query, context):
     data["transactions"].append(transaction)
     save_data(data)
     
-    print(f"\n🔔 СОЗДАН НОВЫЙ СЧЁТ:")
-    print(f"   ID транзакции: {transaction_id}")
-    print(f"   Пользователь: @{query.from_user.username} (ID: {query.from_user.id})")
-    print(f"   Звёзд к оплате: {stars_amount} ⭐️")
-    print(f"   Сумма к выплате: {rub_amount} ₽")
-    print(f"   Способ выплаты: {payment_name}")
-    print(f"   Реквизиты: {payment_details}")
-    print(f"   Время: {datetime.now().strftime('%H:%M:%S')}")
-    print("=" * 60)
+    print(f"✅ Транзакция #{transaction_id} сохранена")
     
     # Название товара
     title = f"Продажа {stars_amount} ⭐️"
@@ -463,11 +486,13 @@ async def create_stars_invoice(query, context):
             prices=prices
         )
         
+        print(f"✅ Счёт отправлен пользователю")
+        
         # Удаляем предыдущее сообщение
         await query.message.delete()
         
     except Exception as e:
-        logger.error(f"Ошибка при создании счёта: {e}")
+        print(f"❌ Ошибка при создании счёта: {e}")
         await query.edit_message_text(
             "❌ Ошибка при создании счёта\n\n"
             "Пожалуйста, попробуйте позже или обратитесь в поддержку.\n\n"
@@ -482,10 +507,9 @@ async def pre_checkout_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     query = update.pre_checkout_query
     await query.answer(ok=True)
     
-    print(f"\n✅ ПРЕДПРОВЕРОЧНЫЙ ЗАПРОС:")
+    print(f"\n✅ ПРЕДПРОВЕРОЧНЫЙ ЗАПРОС ОДОБРЕН:")
     print(f"   Пользователь: @{query.from_user.username}")
     print(f"   Сумма: {query.total_amount} ⭐️")
-    print(f"   Время: {datetime.now().strftime('%H:%M:%S')}")
     print("=" * 60)
 
 async def successful_payment_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -496,8 +520,6 @@ async def successful_payment_handler(update: Update, context: ContextTypes.DEFAU
     print(f"\n💰 ПОЛУЧЕНА ОПЛАТА!")
     print(f"   Payload: {payload}")
     print(f"   Сумма: {payment.total_amount} ⭐️")
-    print(f"   Валюта: {payment.currency}")
-    print(f"   Время: {datetime.now().strftime('%H:%M:%S')}")
     
     # Получаем ID транзакции
     transaction_id = int(payload.replace('sale_', ''))
@@ -525,7 +547,6 @@ async def successful_payment_handler(update: Update, context: ContextTypes.DEFAU
         save_data(data)
         
         print(f"   Статус обновлён: paid")
-        print("=" * 60)
         
         # Сообщение об успехе
         text = (
@@ -559,11 +580,12 @@ async def successful_payment_handler(update: Update, context: ContextTypes.DEFAU
                     f"⏰ Время: {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
                 )
                 await context.bot.send_message(admin_id, admin_text)
+                print(f"✅ Уведомление отправлено админу {admin_id}")
             except Exception as e:
-                logger.error(f"Failed to notify admin {admin_id}: {e}")
+                print(f"❌ Ошибка при уведомлении админа {admin_id}: {e}")
     else:
         print(f"❌ Транзакция {transaction_id} не найдена в базе!")
-        print("=" * 60)
+    print("=" * 60)
 
 async def reject_deal(query, context):
     """Отмена сделки"""
@@ -717,15 +739,11 @@ def main():
     print("=" * 60)
     print("ЗАПУСК БОТА ДЛЯ СКУПКИ ЗВЁЗД TELEGRAM")
     print("=" * 60)
-    print(f"📊 Курс: 1 звезда = {STARS_TO_RUB} ₽")
-    print(f"📊 Минимальная сумма: {MIN_STARS} ⭐️")
-    print(f"📊 Менеджер: @{MANAGER_USERNAME}")
-    print(f"📸 Фото: {PHOTO_FILE} (поместите файл в папку с ботом)")
-    print("=" * 60)
-    print("🔔 В консоли будут отображаться все действия:")
-    print("   • Создание счетов")
-    print("   • Предпроверочные запросы")
-    print("   • Успешные оплаты")
+    print(f"Токен: {TOKEN[:10]}...{TOKEN[-5:]}")
+    print(f"Менеджер: @{MANAGER_USERNAME}")
+    print(f"Курс: 1 звезда = {STARS_TO_RUB} ₽")
+    print(f"Минимальная сумма: {MIN_STARS} ⭐️")
+    print(f"Фото: {PHOTO_FILE}")
     print("=" * 60)
     
     # Проверяем наличие фото
@@ -733,14 +751,17 @@ def main():
         print(f"✅ Файл {PHOTO_FILE} найден")
     else:
         print(f"⚠️ Файл {PHOTO_FILE} не найден. Бот будет работать без фото")
-        print(f"   Поместите файл {PHOTO_FILE} в папку: {os.getcwd()}")
+        print(f"   Текущая папка: {os.getcwd()}")
     print("=" * 60)
     
     try:
         # Создание приложения
+        print("🔄 Создание приложения...")
         application = Application.builder().token(TOKEN).build()
+        print("✅ Приложение создано")
         
         # Регистрация обработчиков
+        print("🔄 Регистрация обработчиков...")
         application.add_handler(CommandHandler("start", start))
         application.add_handler(CommandHandler("stats", admin_stats))
         application.add_handler(CallbackQueryHandler(button_handler))
@@ -754,9 +775,11 @@ def main():
             filters.TEXT & ~filters.COMMAND, 
             handle_message
         ))
+        print("✅ Обработчики зарегистрированы")
         
-        print("✅ Бот успешно инициализирован!")
-        print("🚀 Запуск polling...")
+        print("=" * 60)
+        print("🚀 ЗАПУСК БОТА...")
+        print("📱 Нажмите Ctrl+C для остановки")
         print("=" * 60)
         
         # Запуск бота
@@ -771,6 +794,15 @@ def main():
         print("1. Правильность токена")
         print("2. Интернет-соединение")
         print("3. Не заблокирован ли Telegram")
+        print("\n📝 Детали ошибки:")
+        import traceback
+        traceback.print_exc()
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\n👋 Бот остановлен пользователем")
+    except Exception as e:
+        print(f"\n❌ Необработанная ошибка: {e}")
+        traceback.print_exc()
