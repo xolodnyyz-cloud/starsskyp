@@ -20,7 +20,7 @@ MANAGER_USERNAME = "buyer_supportz"
 
 # Курс и лимиты
 STARS_TO_RUB = 1.6
-MIN_STARS = 100
+MIN_STARS = 1
 
 # База данных
 DATA_FILE = "data.json"
